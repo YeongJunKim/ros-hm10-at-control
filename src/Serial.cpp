@@ -16,12 +16,9 @@ int open_serial(char *dev_name, int baud, int vtime, int vmin)
     int fd;
     struct termios newtio;
 
-    //open serial port
     fd = open(dev_name, O_RDWR | O_NOCTTY);
-    //cout << "hahah" << endl;
-    if(fd < 0)
+    if(fd == 0)
     {
-        //fail open
     	cout << "fail" << endl;
         printf("fail open");
         return -1;

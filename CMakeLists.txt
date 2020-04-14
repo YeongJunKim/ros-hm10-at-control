@@ -119,8 +119,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(imu
-src/Serial.cpp)
+#add_library(imu
+#src/Serial.cpp)
 
 add_executable(hm10 src/hm10.cpp)
 add_dependencies(hm10 ${${PROJECT_NAME}_EXPORTED_TARGETS}

@@ -3,8 +3,12 @@
 #include <iostream>
 #include <sensor_msgs/Imu.h>
 #include <../include/imu.h>
-
-
+#include <../include/AT.h>
+#include <algorithm>
+#include <string>
+#include <unistd.h>
+#include <time.h>
+#include <
 typedef struct
 {
     // Euler
@@ -12,60 +16,191 @@ typedef struct
     float pitch;
     float yaw;
 
-}Euler;
+} Euler;
 
-class MW_AHRS
+class HM10
 {
 
 public:
-    MW_AHRS()
+    HM10()
     {
-        for(int i=0; i<100; i++)
+        for (int i = 0; i < 100; i++)
             buffer[i] = 0;
 
-        dev = open_serial((char*)"/dev/ttyUSB0", 115200, 0, 0);
+        dev = open_serial((char *)"/dev/ttyUSB0", 9600, 0, 0);
 
-        Tx[0] = A;     // a
-        Tx[1] = N;     // n
-        Tx[2] = G;     // g
-        Tx[3] = CR;     // CR
-        Tx[4] = LF;     // LF
+        Tx[0] = A;  // a
+        Tx[1] = N;  // n
+        Tx[2] = G;  // g
+        Tx[3] = CR; // CR
+        Tx[4] = LF; // LF
     }
-    ~MW_AHRS()
+    ~HM10()
     {
         close_serial(dev);
     }
 
+    int set_beacon_mode(void)
+    {
+        sendAT(AT, sizeof(AT) - 1);
+        sendAT(FACTORY_DEFAULT, sizeof(FACTORY_DEFAULT) - 1);
+        sendAT(AT, sizeof(AT) - 1);
+        sendAT(MAJOR, sizeof(MAJOR) - 1, "0X1234");
+    }
+
+    int set_beacon_adv(void)
+    {
+    }
+
+    int set_beacon_scan(void)
+    {
+
+    }
+
+    uint32_t gettick(void)
+    {
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        nowtick = ts.tv_nsec / 1000000;
+        nowtick += ts.tv_sec * 1000;
+        return nowtick;
+    }
+
+    uint32_t delaytick(uint32_t tick)
+    {   
+        pasttick = nowtick;
+        while(1)
+        {
+            gettick();
+            if(nowtick - pasttick > tick)
+            {   
+                pasttick = nowtick;
+                break;
+            }
+        }
+    }
+
+    int run(void)
+    {
+        // sendAT(AT, sizeof(AT)-1);
+        // sendAT(MAJOR, sizeof(MAJOR)-1, "0X1234");
+        nowtick = gettick();
+
+        if (nowtick - pasttick > 1000)
+        {
+            std::cout << "[nowtick] : " << nowtick << std::endl;
+
+            sendAT(AT);
+            delaytick(100);
+            sendAT(MAJOR, "?");
+            delaytick(100);
+            sendAT(MAJOR, "?");
+            delaytick(100);
+
+            read(dev, &buffer, 100);
+            for (int i = 0; i < 100; i++)
+            {
+                if (buffer[i] != 0)
+                {
+                    printf("%c, ", buffer[i]);
+                }
+            }
+            printf("\n");
+            pasttick = nowtick;
+        }
+    }
+
+    int sendAT(char *input, int size)
+    {
+        std::cout << input << std::endl;
+        std::cout << "[size] : " << size << std::endl;
+        for (int i = 0; i < sizeof(input); i++)
+        {
+            printf("[%d, %c] ", input[i], input[i]);
+        }
+        printf("\n");
+        write(dev, input, size);
+    }
+
+    int sendAT(char *input, int size, char *data)
+    {
+        std::cout << data << std::endl;
+        std::cout << "[size] :" << strlen(data) << std::endl;
+        std::cout << "[size2] : " << strlen(input) << std::endl;
+
+        write(dev, input, size);
+        write(dev, data, strlen(data));
+    }
+    int sendAT(char *input)
+    {
+        std::cout << "[size] :" << strlen(input) << std::endl;
+        for (int i = 0; i < strlen(input); i++)
+        {
+            printf("[%d, %c] ", input[i], input[i]);
+        }
+        printf("\n");
+        write(dev, input, strlen(input));
+    }
+    int sendAT(char *input, char *data)
+    {
+        std::cout << "[size] :" << strlen(data) << std::endl;
+        std::cout << "[size2] : " << strlen(input) << std::endl;
+
+        int s1 = strlen(input);
+        int s2 = strlen(data);
+        int size = strlen(data) + strlen(input);
+        char send[size];
+        for (int i = 0; i < strlen(input); i++)
+        {
+            send[i] = input[i];
+        }
+        for (int i = 0; i < strlen(data); i++)
+        {
+            send[s1+i] = data[i];
+        }
+        for (int i = 0; i < size; i++)
+        {
+            printf("[%d, %c] ", send[i], send[i]);
+        }
+        printf("\n");
+        std::cout << "[XXXX]" << send << std::endl;
+        // write(dev, input, strlen(input));
+        // write(dev, data, strlen(data));
+        write(dev, send, size);
+    }
+
+    int state_machine(void)
+    {
+    }
+
     Euler get_data(void)
     {
-        write(dev,Tx,5);
+        write(dev, Tx, 5);
         read(dev, &buffer, 100);
 
-        if(buffer[0] == 'a' && buffer[1] == 'n' && buffer[2] == 'g')
+        if (buffer[0] == 'a' && buffer[1] == 'n' && buffer[2] == 'g')
         {
             char *ptr = strtok(buffer, " ");
 
-            ang_count=0;
+            ang_count = 0;
 
-            while(ptr != NULL)
+            while (ptr != NULL)
             {
                 ang_count++;
 
                 ptr = strtok(NULL, " ");
 
-                if(ang_count == 1)
+                if (ang_count == 1)
                 {
                     euler.roll = atof(ptr);
                 }
-                else if(ang_count == 2)
+                else if (ang_count == 2)
                 {
                     euler.pitch = atof(ptr);
                 }
-                else if(ang_count == 3)
+                else if (ang_count == 3)
                 {
                     euler.yaw = atof(ptr);
                 }
-
             }
         }
 
@@ -75,11 +210,13 @@ public:
         std::cout << std::endl;
 
         return euler;
-
     }
 
-
 private:
+    //
+    unsigned long nowtick = 0;
+    unsigned long pasttick = 0;
+    struct timespec ts;
     // Device Name
     int dev = 0;
 
@@ -99,34 +236,32 @@ private:
     const unsigned char CR = 0x0D;
     const unsigned char LF = 0x0A;
 
+    uint8_t *sendData;
+    uint8_t *getData;
 };
-
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "mw_ahrsv1");
+    ros::init(argc, argv, "hm10");
     ros::NodeHandle nh;
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(1000);
 
-    ros::Publisher imu_pub_ = nh.advertise<mw_ahrsv1::imu>("imu", 100);
-    ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("mw_ahrsv1/imu", 1);
-    mw_ahrsv1::imu msg_;
+    ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("hm10/imu", 1);
 
     sensor_msgs::Imu msg;
 
-    MW_AHRS ahrs_obj;
+    HM10 hm10;
     Euler euler;
+
+    uint32_t count = 0;
 
     while (ros::ok())
     {
-        euler = ahrs_obj.get_data();
+        count++;
+        //std::cout << "[step] : " << count << std::endl;
+        //euler = hm10.get_data();
 
-
-        msg_.roll = euler.roll;
-        msg_.pitch = euler.pitch;
-        msg_.yaw = euler.yaw;
-
-        imu_pub_.publish(msg_);
+        hm10.run();
 
         msg.orientation.x = euler.roll;
         msg.orientation.y = euler.pitch;
@@ -135,12 +270,7 @@ int main(int argc, char **argv)
         imu_pub.publish(msg);
 
         loop_rate.sleep();
-
     }
-
 
     return 0;
 }
-
-
-
