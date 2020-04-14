@@ -8,7 +8,6 @@
 #include <string>
 #include <unistd.h>
 #include <time.h>
-#include <
 typedef struct
 {
     // Euler
@@ -24,7 +23,7 @@ class HM10
 public:
     HM10()
     {
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 1000; i++)
             buffer[i] = 0;
 
         dev = open_serial((char *)"/dev/ttyUSB0", 9600, 0, 0);
@@ -42,10 +41,30 @@ public:
 
     int set_beacon_mode(void)
     {
-        sendAT(AT, sizeof(AT) - 1);
-        sendAT(FACTORY_DEFAULT, sizeof(FACTORY_DEFAULT) - 1);
-        sendAT(AT, sizeof(AT) - 1);
-        sendAT(MAJOR, sizeof(MAJOR) - 1, "0X1234");
+        sendAT(AT);
+        delaytick(1000);
+        sendAT(RESET);
+        delaytick(1000);
+        sendAT(MAJOR, "0X0001");
+        delaytick(100);
+        sendAT(MINOR, "0X0002");
+        delaytick(100);
+        sendAT(ADVERTISING_INTERVAL, "5");
+        delaytick(100);
+        sendAT(NAME, "ACSL");
+        delaytick(100);
+        sendAT(ADVERTISING_TYPE, "3");
+        delaytick(100);
+        sendAT(IBEACON, "1");
+        delaytick(100);
+        sendAT(IBEACON_MODE, "2");
+        delaytick(100);
+        sendAT(ROLE, "0");
+        delaytick(100);
+        sendAT(POWER_MODE, "0");
+        delaytick(100);
+        sendAT(RESET);
+        delaytick(100);
     }
 
     int set_beacon_adv(void)
@@ -54,7 +73,6 @@ public:
 
     int set_beacon_scan(void)
     {
-
     }
 
     uint32_t gettick(void)
@@ -66,13 +84,13 @@ public:
     }
 
     uint32_t delaytick(uint32_t tick)
-    {   
+    {
         pasttick = nowtick;
-        while(1)
+        while (1)
         {
             gettick();
-            if(nowtick - pasttick > tick)
-            {   
+            if (nowtick - pasttick > tick)
+            {
                 pasttick = nowtick;
                 break;
             }
@@ -96,8 +114,33 @@ public:
             sendAT(MAJOR, "?");
             delaytick(100);
 
-            read(dev, &buffer, 100);
-            for (int i = 0; i < 100; i++)
+            sendAT(AT);
+            delaytick(1000);
+            sendAT(RESET);
+            delaytick(1000);
+            sendAT(MAJOR, "0X0001");
+            delaytick(100);
+            sendAT(MINOR, "0X0002");
+            delaytick(100);
+            sendAT(ADVERTISING_INTERVAL, "5");
+            delaytick(100);
+            sendAT(NAME, "ACSL");
+            delaytick(100);
+            sendAT(ADVERTISING_TYPE, "3");
+            delaytick(100);
+            sendAT(IBEACON, "1");
+            delaytick(100);
+            sendAT(IBEACON_MODE, "2");
+            delaytick(100);
+            sendAT(ROLE, "0");
+            delaytick(100);
+            sendAT(POWER_MODE, "0");
+            delaytick(100);
+            sendAT(RESET);
+            delaytick(100);
+
+            read(dev, &buffer, 1000);
+            for (int i = 0; i < 1000; i++)
             {
                 if (buffer[i] != 0)
                 {
@@ -142,7 +185,7 @@ public:
     }
     int sendAT(char *input, char *data)
     {
-        std::cout << "[size] :" << strlen(data) << std::endl;
+        std::cout << "[size1] :" << strlen(data) << std::endl;
         std::cout << "[size2] : " << strlen(input) << std::endl;
 
         int s1 = strlen(input);
@@ -155,14 +198,14 @@ public:
         }
         for (int i = 0; i < strlen(data); i++)
         {
-            send[s1+i] = data[i];
+            send[s1 + i] = data[i];
         }
         for (int i = 0; i < size; i++)
         {
             printf("[%d, %c] ", send[i], send[i]);
         }
         printf("\n");
-        std::cout << "[XXXX]" << send << std::endl;
+        std::cout << "[sendData]" << send << std::endl;
         // write(dev, input, strlen(input));
         // write(dev, data, strlen(data));
         write(dev, send, size);
@@ -223,7 +266,7 @@ private:
     Euler euler;
 
     // Data buffer
-    char buffer[100];
+    char buffer[1000];
     unsigned char Tx[5];
 
     // Serperate Euler Angle Variable
@@ -254,6 +297,8 @@ int main(int argc, char **argv)
     Euler euler;
 
     uint32_t count = 0;
+
+    // hm10.set_beacon_mode();
 
     while (ros::ok())
     {

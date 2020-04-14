@@ -4,7 +4,7 @@
 
 #define AT                      "AT"
 #define FACTORY_DEFAULT         "AT+RENEW"
-#define ROLE                    "AT+ROLE?"
+#define ROLE                    "AT+ROLE"
 #define MAJOR                   "AT+MARJ"
 #define MINOR                   "AT+MINO"
 #define ADVERTISING_INTERVAL    "AT+ADVI"
