@@ -14,3 +14,4 @@
 #define IBEACON_MODE            "AT+DELO"
 #define POWER_MODE              "AT+PWRM"
 #define RESET                   "AT+RESET"
+#define START                   "AT+START"
