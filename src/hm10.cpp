@@ -9,6 +9,11 @@
 #include <unistd.h>
 #include <time.h>
 #include <cmath>
+
+#define BUF_SIZE 2000
+#define MODE_BROADCASTING   1
+#define MODE_SCAN           2
+
 typedef struct _devices
 {
     /* data */
@@ -28,10 +33,19 @@ class HM10
 public:
     HM10()
     {
-        for (int i = 0; i < 1000; i++)
+        
+        for (int i = 0; i < BUF_SIZE; i++)
             buffer[i] = 0;
 
         dev = open_serial((char *)"/dev/ttyUSB0", 9600, 0, 0);
+    }
+    HM10(char *_dev)
+    {
+        std::cout << "dev : " << _dev << std::endl;
+        for (int i = 0; i < BUF_SIZE; i++)
+            buffer[i] = 0;
+
+        dev = open_serial((char *)_dev, 9600, 0, 0);
     }
     ~HM10()
     {
@@ -73,10 +87,7 @@ public:
         readbuf();
         sendAT(POWER_MODE, "0");
         delaytick(1000);
-        readbuf();
-        sendAT(RESET);
-        delaytick(1000);
-        readbuf();
+
         sendAT(ROLE, "0");
         delaytick(1000);
         readbuf();
@@ -123,47 +134,105 @@ public:
     {
         
     }
-    int readbuf(void)
+    int readchar(void)
     {
-        read(dev, &buffer, 1000);
-        state_machine(buffer);
-        // for (int i = 0; i < 1000; i++)
-        // {
-        //     if (buffer[i] != 0)
-        //     {
-        //         state_machine(buffer[i]);
-        //     }
-        // }
-        for (int i = 0; i < 1000; i++)
-        {
-            if (buffer[i] != 0)
+
+    }
+    int readbuf()
+    {
+        read(dev, &buffer, BUF_SIZE);
+        for (int i = 0; i < BUF_SIZE; i++)
+            if(buffer[i] !=0)
             {
-                //printf("%c", buffer[i]);
+                std::cout << buffer[i];
+                state_machine(buffer[i]);
                 buffer[i] = 0;
             }
+        std::cout << std::endl;
+    }
+    int readbuf(int size)
+    {
+        read(dev, &buffer, size);
+        for (int i = 0; i < size; i++)
+            if(buffer[i] !=0)
+            {
+                state_machine(buffer[i]);
+                buffer[i] = 0;
+            }
+    }
+    int broadcast(void)
+    {   
+        // sendAT(RESET);
+        // delaytick(2000); readbuf();
+        sendAT(AT);
+        delaytick(100); readbuf();
+        sendAT(ROLE, "0");
+        delaytick(100); readbuf();
+        sendAT(IBEACON_MODE, "2");
+        delaytick(2000); readbuf();
+        sendAT(START);
+        delaytick(100); readbuf();
+    }
+
+    int discover(void)
+    {
+        nowtick = gettick();
+
+        readbuf(100);
+        if (nowtick - pasttick > 1000)
+        {
+            std::cout << "[nowtick] : " << nowtick << std::endl;
+
+            sendAT(IBEACON_DISCOVER, "?");
+
+            pasttick = nowtick;
         }
-        printf("\n");
+    }
+
+    int change_mode(void)
+    {
+        if(mode == MODE_SCAN)
+        {
+            mode = MODE_BROADCASTING;
+            sendAT(ROLE,"0");
+            delaytick(100); readbuf();
+            sendAT(START);
+            delaytick(100); readbuf();
+        }
+        else if(mode == MODE_BROADCASTING)
+        {
+            mode = MODE_SCAN;
+            sendAT(ROLE,"1");
+            delaytick(100); readbuf();
+            sendAT(START);
+            delaytick(100); readbuf();
+            delaytick(100);
+        }
     }
 
     int run(void)
     {
         nowtick = gettick();
-
-        if (nowtick - pasttick > 2000)
+        
+        if(nowtick - pasttick > 200)
         {
-            std::cout << "[nowtick] : " << nowtick << std::endl;
-
-            sendAT(AT);
-            delaytick(100);
-            readbuf();
-
+            int rnd = rand() & 100;
+            if (rnd > 97)
+                change_mode();
+            if(mode == MODE_BROADCASTING)
+            {            }
+            else if(mode == MODE_SCAN)
+            {
+                readbuf(1000);
+                sendAT(IBEACON_DISCOVER, "?");
+            }
             pasttick = nowtick;
         }
     }
 
     int sendAT(char *input)
     {
-        std::cout << "[size] :" << strlen(input) << std::endl;
+        //std::cout << "[size] :" << strlen(input) << std::endl;
         std::cout << "[sendData]" << input << std::endl;
         write(dev, input, strlen(input));
     }
@@ -217,6 +286,92 @@ public:
             return (0.80076) * pow(ratio, 7.7095) +0.111;
         }
         
+    }
+    int state_machine(char data)
+    {
+        if(state == 0)
+            if(data == 'O')
+                state = 1;
+            else 
+                state = 0;
+        else if(state == 1)
+            if(data == 'K')
+                state = 2;
+            else
+                state = 0;
+        else if(state == 2)
+            if(data == '+')
+                state = 3;
+            else
+                state = 0;
+        else if(state == 3)
+            if(data == 'D')
+                state = 4;
+            else
+                state = 0;
+        else if(state == 4)
+            if(data == 'I')
+                state = 5;
+            else
+                state = 0;
+        else if(state == 5)
+            if(data == 'S')
+                state = 6;
+            else
+                state = 0;
+        else if(state == 6)
+            if(data == 'C')
+                state = 7;
+            else
+                state = 0;
+        else if(state == 7)
+            if(data == ':')
+                state = 8;
+            else
+                state = 0;
+        else if(state >= 8)
+        {
+
+            packet[state - 8] = data;
+            state++;
+            if(state == 70 + 8)
+            {
+                state = 0;
+                char_to_device(packet);
+            }
+        }
+    }
+    devices_t char_to_device(char *data)
+    {
+        std::string str(data);
+        devices_t temp;
+        strcpy(temp.factory_id, str.substr(0, 8).c_str());
+        strcpy(temp.ibeacon_id, str.substr(9, 32).c_str());
+        strcpy(temp.major, str.substr(42, 4).c_str());
+        strcpy(temp.minor, str.substr(46, 4).c_str());
+        strcpy(temp.txpower, str.substr(50, 2).c_str());
+        strcpy(temp.MAC, str.substr(53, 12).c_str());
+        strcpy(temp.RSSI, str.substr(66, 4).c_str());
+    
+        if(strcmp(str.substr(0, 8).c_str(), "00000000") == 0)
+            return temp;
+        if(strcmp(str.substr(9, 32).c_str(), IBEACON_APPLE_LOCATION) != 0)
+            return temp;
+       
+        std::cout << "factory_id : " << temp.factory_id << std::endl;
+        std::cout << "ibeacon_id : " << temp.ibeacon_id << std::endl;
+        std::cout << "major : " << temp.major << std::endl;
+        std::cout << "minor : " << temp.minor << std::endl;
+        std::cout << "txpower : " << temp.txpower << std::endl;
+        std::cout << "MAC : " << temp.MAC << std::endl;
+        std::cout << "RSSI : " << temp.RSSI << std::endl;
+
+        int rssi = atoi(temp.RSSI);
+        int txpower = str2hex(temp.txpower[0], temp.txpower[1]);
+        std::cout << "rssi:" << rssi << std::endl;
+        std::cout << "txpower:" << txpower << std::endl;
+        std::cout << "distance:" << calculateAccuracy(txpower, rssi) << std::endl;
+        return temp;
     }
     int state_machine(char * data)
     {
@@ -306,11 +461,12 @@ private:
 
     //
     int state = 0;
+    char packet[70] = {0,};
 
     // Data buffer
-    char buffer[1000];
+    char buffer[BUF_SIZE];
 
-
+    int mode = MODE_BROADCASTING;
     // Devices
     devices_t devices[100];
 };
@@ -318,14 +474,24 @@ private:
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "hm10");
+    std::cout << "argv[1]"<< argv[1] << std::endl;
     ros::NodeHandle nh;
     ros::Rate loop_rate(1000);
 
     ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("hm10/imu", 1);
 
     sensor_msgs::Imu msg;
-
-    HM10 hm10;
+    std::string param;
+    std::cout << "parameter ? " <<std::endl;
+    nh.getParam("device", param);
+    std::cout << "parameter : " <<std::endl;
+    std::cout << param << std::endl;
+    char *dd;
+    int len = param.length();
+    dd = new char[len];
+    strcpy(dd, param.c_str());
+    std::cout << "dd: "<< dd << ","<< strlen(dd) <<std::endl;
+    HM10 hm10(dd);
 
     uint32_t count = 0;
 
@@ -334,13 +500,15 @@ int main(int argc, char **argv)
     char mode;
     std::cout << "[MODE] : " << std::endl;
     std::cout << "[u] : user input mode" << std::endl;
-    std::cout << "[a] : atomation mode" << std::endl;
+    std::cout << "[a] : atomation  edit(hm.run())" << std::endl;
+    std::cout << "[d] : discovery mode (discover Air location)" << std::endl;
+    std::cout << "[b] : broadcast mode (broadcast Air location)" << std::endl;
     std::cin >> mode;
 
     while (ros::ok())
     {
         count++;
-        std::cout << "[step] : " << count << std::endl;
+        // std::cout << "[step] : " << count << std::endl;
         if (mode == 'u')
         {
             std::string input;
@@ -351,6 +519,8 @@ int main(int argc, char **argv)
             {
                 //std::cout << "Delay more" << std::endl;
                 //hm10.delaytick(5000);
+                hm10.delaytick(1000);
+                hm10.readbuf();
 
             }
             else
@@ -362,6 +532,19 @@ int main(int argc, char **argv)
         else if (mode == 'a')
         {
             hm10.run();
+        }
+        else if (mode == 'd')
+        {
+            hm10.discover();
+        }
+        else if (mode == 'b')
+        {
+            hm10.broadcast();
+            mode = 'w';
+        }
+        else if (mode = 'w')
+        {
+
         }
         loop_rate.sleep();
     }

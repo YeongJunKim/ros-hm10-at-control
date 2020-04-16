@@ -54,3 +54,13 @@ AT+ROLE
 #define IBEACON_MODE            "AT+DELO"
 
 #define POWER_MODE              "AT+PWRM"
+
+#define IBEACON_DISCOVER        "AT+DISI"
+
+#define IMMEDIATELY_START       "AT+IMME"
+
+
+
+
+
+#define IBEACON_APPLE_LOCATION  "74278BDAB64445208F0C720EAF059935"

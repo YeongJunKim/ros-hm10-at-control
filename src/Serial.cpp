@@ -23,6 +23,11 @@ int open_serial(char *dev_name, int baud, int vtime, int vmin)
         printf("fail open");
         return -1;
     }
+    else
+    {
+        cout << "open good" <<endl;
+    }
+    
 
     // port configure
     memset(&newtio, 0, sizeof(newtio));
