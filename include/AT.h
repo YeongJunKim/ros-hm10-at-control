@@ -1,17 +1,56 @@
 #include <iostream>
 
 
-
+/*
+AT
+Get response.
+*/
 #define AT                      "AT"
+
+/*
+AT+RENEW
+Factory reset.
+*/
 #define FACTORY_DEFAULT         "AT+RENEW"
-#define ROLE                    "AT+ROLE"
-#define MAJOR                   "AT+MARJ"
-#define MINOR                   "AT+MINO"
-#define ADVERTISING_INTERVAL    "AT+ADVI"
-#define NAME                    "AT+NAME"
-#define ADVERTISING_TYPE        "AT+ADTY"
-#define IBEACON                 "AT+IBEA"
-#define IBEACON_MODE            "AT+DELO"
-#define POWER_MODE              "AT+PWRM"
+
+/*
+AT+RESET
+Device restart.
+*/
 #define RESET                   "AT+RESET"
+
+/*
+AT+START
+Start
+*/
 #define START                   "AT+START"
+
+/*
+AT+IMME
+"1" start when AT+START command received.
+"0" start immediately.
+*/
+#define IMME                    "AT+IMME"
+
+/*
+AT+ROLE
+"1" central
+"0" slave
+*/
+#define ROLE                    "AT+ROLE"
+
+#define MAJOR                   "AT+MARJ"
+
+#define MINOR                   "AT+MINO"
+
+#define ADVERTISING_INTERVAL    "AT+ADVI"
+
+#define NAME                    "AT+NAME"
+
+#define ADVERTISING_TYPE        "AT+ADTY"
+
+#define IBEACON                 "AT+IBEA"
+
+#define IBEACON_MODE            "AT+DELO"
+
+#define POWER_MODE              "AT+PWRM"
