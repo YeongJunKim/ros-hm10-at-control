@@ -2,6 +2,7 @@
 #include "Serial.h"
 #include <iostream>
 #include <sensor_msgs/Imu.h>
+#include <std_msgs/String.h>
 #include <../include/imu.h>
 #include <../include/AT.h>
 #include <algorithm>
@@ -55,42 +56,18 @@ public:
     int set_beacon_mode(void)
     {
         delaytick(2000);
-        sendAT(AT);
-        delaytick(1000);
-        readbuf();
-        sendAT(RESET);
-        delaytick(2000);
-        readbuf();
-        sendAT(AT);
-        delaytick(2000);
-        readbuf();
-        sendAT(MAJOR, "0X0001");
-        delaytick(2000);
-        readbuf();
-        sendAT(MINOR, "0X0002");
-        delaytick(1000);
-        readbuf();
-        sendAT(ADVERTISING_INTERVAL, "0");
-        delaytick(1000);
-        readbuf();
-        sendAT(NAME, "ACSL");
-        delaytick(1000);
-        readbuf();
-        sendAT(ADVERTISING_TYPE, "3");
-        delaytick(1000);
-        readbuf();
-        sendAT(IBEACON, "1");
-        delaytick(1000);
-        readbuf();
-        sendAT(IBEACON_MODE, "2");
-        delaytick(2000);
-        readbuf();
-        sendAT(POWER_MODE, "0");
-        delaytick(1000);
-
-        sendAT(ROLE, "0");
-        delaytick(1000);
-        readbuf();
+        sendAT(AT); delaytick(1000); readbuf();
+        sendAT(RESET); delaytick(2000); readbuf();
+        sendAT(AT); delaytick(2000); readbuf();
+        sendAT(MAJOR, "0x0001"); delaytick(2000); readbuf();
+        sendAT(MINOR, "0x0002"); delaytick(1000); readbuf();
+        sendAT(ADVERTISING_INTERVAL, "0"); delaytick(1000); readbuf();
+        sendAT(NAME, "ACSL"); delaytick(1000); readbuf();
+        sendAT(ADVERTISING_TYPE, "3"); delaytick(1000); readbuf();
+        sendAT(IBEACON, "1"); delaytick(1000); readbuf();
+        sendAT(IBEACON_MODE, "2"); delaytick(2000); readbuf();
+        sendAT(POWER_MODE, "1"); delaytick(1000); readbuf();
+        sendAT(ROLE, "0"); delaytick(1000); readbuf();
         sendAT(START);
     }
 
@@ -233,7 +210,7 @@ public:
     int sendAT(char *input)
     {
         //std::cout << "[size] :" << strlen(input) << std::endl;
-        // std::cout << "[sendData]" << input << std::endl;
+        std::cout << "[sendData]" << input << std::endl;
         write(dev, input, strlen(input));
     }
 
@@ -242,7 +219,7 @@ public:
         int length = input.length();
         char ch[100];
         strcpy(ch, input.c_str());
-        // std::cout << "[sendData]" << input << std::endl;
+        std::cout << "[sendData]" << input << std::endl;
         write(dev, ch, length);
     }
 
@@ -251,12 +228,13 @@ public:
         int s1 = strlen(input);
         int s2 = strlen(data);
         int size = strlen(data) + strlen(input);
+        char *a = new char[size];
         char send[size];
         for (int i = 0; i < strlen(input); i++)
             send[i] = input[i];
         for (int i = 0; i < strlen(data); i++)
             send[s1 + i] = data[i];
-        // std::cout << "[sendData]" << send << std::endl;
+        std::cout << "[sendData]" << send << "[len, s1, s2]" << size <<", " << s1 <<", "<< s2  << std::endl;
         write(dev, send, size);
     }
     void print(std::string::size_type n, std::string const &s)
@@ -450,6 +428,10 @@ public:
         }
         return -1;
     }
+    int getDev(void)
+    {
+        return dev;
+    }
 
 private:
     //
@@ -471,27 +453,44 @@ private:
     devices_t devices[100];
 };
 
+void sub_at_callback(const std_msgs::String::ConstPtr& msg)
+{
+    ROS_INFO("get AT message : [%s] ", msg->data.c_str());
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "hm10");
-    std::cout << "argv[1]"<< argv[1] << std::endl;
+    std::string param1(argv[1]);
     ros::NodeHandle nh;
     ros::Rate loop_rate(1000);
 
-    ros::Publisher imu_pub = nh.advertise<sensor_msgs::Imu>("hm10/imu", 1);
+    ros::Subscriber sub_at = nh.subscribe("HM10/command",1, sub_at_callback);
 
     sensor_msgs::Imu msg;
     std::string param;
-    std::cout << "parameter ? " <<std::endl;
-    nh.getParam("device", param);
-    std::cout << "parameter : " <<std::endl;
-    std::cout << param << std::endl;
-    char *dd;
+
+    char *_dev;
     int len = param.length();
-    dd = new char[len];
-    strcpy(dd, param.c_str());
-    std::cout << "dd: "<< dd << ","<< strlen(dd) <<std::endl;
-    HM10 hm10(dd);
+    if (param1.length() > 20)
+    {
+        nh.getParam("device", param1);
+        _dev = new char[len];
+        strcpy(_dev, param1.c_str());
+    }
+    else
+    {
+        _dev = new char[len];
+        strcpy(_dev, param1.c_str());
+    }
+    
+
+    HM10 hm10(_dev);
+    if(hm10.getDev() == -1)
+    {
+        std::cout << "port error" << std::endl;
+        return -1;
+    }
 
     uint32_t count = 0;
 
@@ -503,12 +502,19 @@ int main(int argc, char **argv)
     std::cout << "[a] : atomation  edit(hm.run())" << std::endl;
     std::cout << "[d] : discovery mode (discover Air location)" << std::endl;
     std::cout << "[b] : broadcast mode (broadcast Air location)" << std::endl;
+    std::cout << "[s] : set beacon mode" << std::endl;
+    std::cout << "[r] : set ros AT mode" << std::endl;
     std::cin >> mode;
 
     while (ros::ok())
     {
         count++;
-        // std::cout << "[step] : " << count << std::endl;
+        // std::cout << "[step] : " << count <<"mode:"<< mode << std::endl;
+        if (mode == 's')
+        {
+            hm10.set_beacon_mode();
+            mode = 'u';
+        }
         if (mode == 'u')
         {
             std::string input;
@@ -542,11 +548,17 @@ int main(int argc, char **argv)
             hm10.broadcast();
             mode = 'w';
         }
-        else if (mode = 'w')
+        else if (mode == 'w')
         {
 
         }
+        else if (mode == 'r')
+        {
+            ros::spinOnce();
+        }
+
         loop_rate.sleep();
+        
     }
 
     return 0;

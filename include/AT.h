@@ -59,8 +59,11 @@ AT+ROLE
 
 #define IMMEDIATELY_START       "AT+IMME"
 
-
-
-
-
 #define IBEACON_APPLE_LOCATION  "74278BDAB64445208F0C720EAF059935"
+
+#define IBEACON_UUID_0          "AT+IBE0"
+#define IBEACON_UUID_1          "AT+IBE1"
+#define IBEACON_UUID_2          "AT+IBE2"
+#define IBEACON_UUID_3          "AT+IBE3"
+
+
