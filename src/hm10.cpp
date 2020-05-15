@@ -117,15 +117,32 @@ public:
     }
     int readbuf()
     {
+        int isdata = 0;
         read(dev, &buffer, BUF_SIZE);
         for (int i = 0; i < BUF_SIZE; i++)
             if(buffer[i] !=0)
             {
-                std::cout << buffer[i];
+                if(buffer[i] > 0)
+                {
+                    std::cout << buffer[i];
+                    isdata = 1;
+                }
                 state_machine(buffer[i]);
                 buffer[i] = 0;
             }
-        std::cout << std::endl;
+
+        if(isdata)
+            std::cout << std::endl;
+    }
+    int readbuf2()
+    {
+        int n;
+        // char buffer[1000] = {0,};
+        do{
+            n = read(dev, &buffer, 1);
+            if(n > 0)
+            std::cout << (char)n<<","<< n << ",";
+        } while(n > 0);
     }
     int readbuf(int size)
     {
@@ -453,9 +470,17 @@ private:
     devices_t devices[100];
 };
 
+
+
+
+HM10 *hm10;
+
+
 void sub_at_callback(const std_msgs::String::ConstPtr& msg)
 {
     ROS_INFO("get AT message : [%s] ", msg->data.c_str());
+    hm10->sendAT(msg->data);
+ 
 }
 
 int main(int argc, char **argv)
@@ -463,9 +488,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "hm10");
     std::string param1(argv[1]);
     ros::NodeHandle nh;
-    ros::Rate loop_rate(1000);
+    ros::Rate loop_rate(100);
 
-    ros::Subscriber sub_at = nh.subscribe("HM10/command",1, sub_at_callback);
 
     sensor_msgs::Imu msg;
     std::string param;
@@ -483,16 +507,18 @@ int main(int argc, char **argv)
         _dev = new char[len];
         strcpy(_dev, param1.c_str());
     }
-    
 
-    HM10 hm10(_dev);
-    if(hm10.getDev() == -1)
+    hm10 = new HM10(_dev);
+    if(hm10->getDev() == -1)
     {
         std::cout << "port error" << std::endl;
         return -1;
     }
 
     uint32_t count = 0;
+
+
+    ros::Subscriber sub_at = nh.subscribe("HM10/command",1, sub_at_callback);
 
     // hm10.set_beacon_mode();
 
@@ -512,7 +538,7 @@ int main(int argc, char **argv)
         // std::cout << "[step] : " << count <<"mode:"<< mode << std::endl;
         if (mode == 's')
         {
-            hm10.set_beacon_mode();
+            hm10->set_beacon_mode();
             mode = 'u';
         }
         if (mode == 'u')
@@ -520,41 +546,42 @@ int main(int argc, char **argv)
             std::string input;
             std::cout << "[INPUT STRING]" << std::endl;
             std::cin >> input;
-            hm10.sendAT(input);
+            hm10->sendAT(input);
             if (strcmp("AT+DISI?", input.c_str()) == 0)
             {
                 //std::cout << "Delay more" << std::endl;
                 //hm10.delaytick(5000);
-                hm10.delaytick(1000);
-                hm10.readbuf();
+                hm10->delaytick(1000);
+                hm10->readbuf();
 
             }
             else
             {
-                hm10.delaytick(1000);
-                hm10.readbuf();
+                hm10->delaytick(1000);
+                hm10->readbuf();
             }
         }
         else if (mode == 'a')
         {
-            hm10.run();
+            hm10->run();
         }
         else if (mode == 'd')
         {
-            hm10.discover();
+            hm10->discover();
         }
         else if (mode == 'b')
         {
-            hm10.broadcast();
+            hm10->broadcast();
             mode = 'w';
+        }
+        else if (mode == 'r')
+        {
+            hm10->readbuf();
+            ros::spinOnce();
         }
         else if (mode == 'w')
         {
 
-        }
-        else if (mode == 'r')
-        {
-            ros::spinOnce();
         }
 
         loop_rate.sleep();
