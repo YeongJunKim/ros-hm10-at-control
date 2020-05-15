@@ -233,7 +233,7 @@ public:
     int sendAT(char *input)
     {
         //std::cout << "[size] :" << strlen(input) << std::endl;
-        std::cout << "[sendData]" << input << std::endl;
+        // std::cout << "[sendData]" << input << std::endl;
         write(dev, input, strlen(input));
     }
 
@@ -242,7 +242,7 @@ public:
         int length = input.length();
         char ch[100];
         strcpy(ch, input.c_str());
-        std::cout << "[sendData]" << input << std::endl;
+        // std::cout << "[sendData]" << input << std::endl;
         write(dev, ch, length);
     }
 
@@ -256,7 +256,7 @@ public:
             send[i] = input[i];
         for (int i = 0; i < strlen(data); i++)
             send[s1 + i] = data[i];
-        std::cout << "[sendData]" << send << std::endl;
+        // std::cout << "[sendData]" << send << std::endl;
         write(dev, send, size);
     }
     void print(std::string::size_type n, std::string const &s)

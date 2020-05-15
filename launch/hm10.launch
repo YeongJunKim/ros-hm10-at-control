@@ -1,0 +1,6 @@
+<launch>
+    <arg name="dev" default="/dev/ttyUSB0"/>
+    <param name="device" type="string" value="$(arg dev)"/>
+    <node name="hm10" pkg="hm10" type="hm10" output="screen">
+    </node>
+</launch>
