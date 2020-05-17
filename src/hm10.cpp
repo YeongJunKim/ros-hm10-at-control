@@ -523,24 +523,27 @@ int main(int argc, char **argv)
     // hm10.set_beacon_mode();
 
     char mode;
-    std::cout << "[MODE] : " << std::endl;
-    std::cout << "[u] : user input mode" << std::endl;
-    std::cout << "[a] : atomation  edit(hm.run())" << std::endl;
-    std::cout << "[d] : discovery mode (discover Air location)" << std::endl;
-    std::cout << "[b] : broadcast mode (broadcast Air location)" << std::endl;
-    std::cout << "[s] : set beacon mode" << std::endl;
-    std::cout << "[r] : set ros AT mode" << std::endl;
-    std::cin >> mode;
+    while (ros::ok())
+    {
+        std::cout << "[MODE] : " << std::endl;
+        std::cout << "[u] : user input mode" << std::endl;
+        std::cout << "[a] : atomation  edit(hm.run())" << std::endl;
+        std::cout << "[d] : discovery mode (discover Air location)" << std::endl;
+        std::cout << "[b] : broadcast mode (broadcast Air location)" << std::endl;
+        std::cout << "[s] : set beacon mode" << std::endl;
+        std::cout << "[r] : set ros AT mode" << std::endl;
+        std::cin >> mode;
+        if(mode == 's')
+            hm10->set_beacon_mode();
+        else
+            break;
+        
+    }
 
     while (ros::ok())
     {
         count++;
         // std::cout << "[step] : " << count <<"mode:"<< mode << std::endl;
-        if (mode == 's')
-        {
-            hm10->set_beacon_mode();
-            mode = 'u';
-        }
         if (mode == 'u')
         {
             std::string input;
