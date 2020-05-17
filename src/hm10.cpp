@@ -536,6 +536,8 @@ int main(int argc, char **argv)
         std::cin >> mode;
         if(mode == 's')
             hm10->set_beacon_mode();
+        else if(mode == 'q')
+            return -1;
         else
             break;
         
@@ -587,9 +589,7 @@ int main(int argc, char **argv)
         {
 
         }
-
         loop_rate.sleep();
-        
     }
 
     return 0;
