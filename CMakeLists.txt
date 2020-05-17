@@ -104,6 +104,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
+#  LIBRARIES hm10
   CATKIN_DEPENDS roscpp rospy std_msgs
   DEPENDS system_lib
 )
@@ -120,13 +121,13 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-#add_library(imu
-#src/Serial.cpp)
+add_library(hm10_serial
+src/Serial.cpp)
 
 add_executable(hm10 src/hm10.cpp)
 add_dependencies(hm10 ${${PROJECT_NAME}_EXPORTED_TARGETS}
 ${catkin_EXPORTED_TARGETS})
-target_link_libraries(hm10 imu ${catkin_LIBRARIES})
+target_link_libraries(hm10 hm10_serial ${catkin_LIBRARIES})
 
 
 
