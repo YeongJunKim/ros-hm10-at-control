@@ -532,6 +532,7 @@ int main(int argc, char **argv)
         std::cout << "[b] : broadcast mode (broadcast Air location)" << std::endl;
         std::cout << "[s] : set beacon mode" << std::endl;
         std::cout << "[r] : set ros AT mode" << std::endl;
+        std::cout << "[q] : quit task" <<std::endl;
         std::cin >> mode;
         if(mode == 's')
             hm10->set_beacon_mode();
