@@ -14,6 +14,15 @@ http://jnhuamao.cn/bluetooth.asp?id=1
 ```
 $: rosrun hm10 hm10 /dev/tty${device name}
 ```
+#### permission issue
+```
+sudo usermod -a -G dialout $USER
+```
+or
+```
+sudo chmod 777 /dev/tty$[device name}
+```
+
 <img src="./etc/img/usage_command.png">
 
 #### topic name : std_msgs::String
