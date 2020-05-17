@@ -1,15 +1,9 @@
 #include "ros/ros.h"
-#include "Serial.h"
 #include <iostream>
-#include <sensor_msgs/Imu.h>
 #include <std_msgs/String.h>
-#include <../include/imu.h>
 #include <../include/AT.h>
-#include <algorithm>
+#include <Serial.h>
 #include <string>
-#include <unistd.h>
-#include <time.h>
-#include <cmath>
 
 #define BUF_SIZE 2000
 #define MODE_BROADCASTING   1
@@ -491,7 +485,6 @@ int main(int argc, char **argv)
     ros::Rate loop_rate(100);
 
 
-    sensor_msgs::Imu msg;
     std::string param;
 
     char *_dev;
