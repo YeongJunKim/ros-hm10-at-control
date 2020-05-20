@@ -121,13 +121,19 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(hm10_serial
-src/Serial.cpp)
+add_library(hm10_serial src/Serial.cpp)
 
 add_executable(hm10 src/hm10.cpp)
 add_dependencies(hm10 ${${PROJECT_NAME}_EXPORTED_TARGETS}
 ${catkin_EXPORTED_TARGETS})
 target_link_libraries(hm10 hm10_serial ${catkin_LIBRARIES})
+
+add_executable(hm10_timer_test src/hm10_timer_test.cpp)
+add_dependencies(hm10_timer_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(hm10_timer_test ${catkin_LIBRARIES})
+
+
+
 
 
 
